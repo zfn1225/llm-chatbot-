@@ -47,10 +47,18 @@ const handleFileUpload = (uploadFile) => {
   const file = uploadFile.raw
   if (!file) return false
 
+  // 文件类型判断更健壮，防止 file.type 为空时报错
+  let fileType = 'file'
+  if (file.type && typeof file.type === 'string') {
+    if (file.type.startsWith('image/')) {
+      fileType = 'image'
+    }
+  }
+
   fileList.value.push({
     name: file.name,
     url: URL.createObjectURL(file),
-    type: file.type.startsWith('image/') ? 'image' : 'file',
+    type: fileType,
     size: file.size,
   })
   return false // 阻止自动上传
