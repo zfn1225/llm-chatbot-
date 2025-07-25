@@ -47,6 +47,14 @@ const handleFileUpload = (uploadFile) => {
   const file = uploadFile.raw
   if (!file) return false
 
+  // 检查是否已存在同名文件，防止重复上传
+  const isDuplicate = fileList.value.some(item => item.name === file.name)
+  if (isDuplicate) {
+    // 可选：弹窗或提示用户
+    // alert('该文件已上传，无需重复上传！')
+    return false
+  }
+
   // 文件类型判断更健壮，防止 file.type 为空时报错
   let fileType = 'file'
   if (file.type && typeof file.type === 'string') {
