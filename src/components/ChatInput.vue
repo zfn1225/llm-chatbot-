@@ -55,6 +55,14 @@ const handleFileUpload = (uploadFile) => {
     return false
   }
 
+  // 文件大小限制（如10MB）
+  const MAX_SIZE = 10 * 1024 * 1024 // 10MB
+  if (file.size > MAX_SIZE) {
+    // 可选：弹窗或提示用户
+    // alert('文件大小不能超过10MB！')
+    return false
+  }
+
   // 文件类型判断更健壮，防止 file.type 为空时报错
   let fileType = 'file'
   if (file.type && typeof file.type === 'string') {
@@ -112,6 +120,7 @@ const handleFileRemove = (file) => {
       :autosize="{ minRows: 1, maxRows: 6 }"
       placeholder="输入消息，Enter 发送，Shift + Enter 换行"
       resize="none"
+      :disabled="props.loading"
       @keydown.enter.exact.prevent="handleSend"
       @keydown.enter.shift="handleNewline"
     />
@@ -122,8 +131,9 @@ const handleFileRemove = (file) => {
         :show-file-list="false"
         :on-change="handleFileUpload"
         accept=".pdf,.doc,.docx,.txt"
+        :disabled="props.loading"
       >
-        <button class="action-btn">
+        <button class="action-btn" :disabled="props.loading">
           <img src="@/assets/photo/附件.png" alt="link" />
         </button>
       </el-upload>
@@ -133,8 +143,9 @@ const handleFileRemove = (file) => {
         :show-file-list="false"
         :on-change="handleFileUpload"
         accept="image/*"
+        :disabled="props.loading"
       >
-        <button class="action-btn">
+        <button class="action-btn" :disabled="props.loading">
           <img src="@/assets/photo/图片.png" alt="picture" />
         </button>
       </el-upload>
