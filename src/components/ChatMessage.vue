@@ -69,16 +69,16 @@ const handleCopy = async () => {
   }
 }
 
-// 处理点赞
-const handleLike = () => {
-  if (isDisliked.value) isDisliked.value = false
-  isLiked.value = !isLiked.value
-}
 
-// 处理踩
-const handleDislike = () => {
-  if (isLiked.value) isLiked.value = false
-  isDisliked.value = !isDisliked.value
+// 合并点赞/踩处理为一个方法
+const handleReaction = (type) => {
+  if (type === 'like') {
+    if (isDisliked.value) isDisliked.value = false
+    isLiked.value = !isLiked.value
+  } else if (type === 'dislike') {
+    if (isLiked.value) isLiked.value = false
+    isDisliked.value = !isDisliked.value
+  }
 }
 
 // 添加重新生成的事件
@@ -210,8 +210,8 @@ const renderedReasoning = computed(() => {
         :speed="message.speed"
         @regenerate="handleRegenerate"
         @copy="handleCopy"
-        @like="handleLike"
-        @dislike="handleDislike"
+        @like="() => handleReaction('like')"
+        @dislike="() => handleReaction('dislike')"
       />
     </div>
   </div>
