@@ -84,8 +84,11 @@ const handleRegenerate = () => {
   emit('regenerate')
 }
 
-// 处理代码块的复制（直接绑定在模板）
-const handleCodeCopy = async (code) => {
+// 处理代码块的复制
+const handleCodeCopy = async (event) => {
+  const codeBlock = event.target.closest('.code-block')
+  const code = codeBlock.querySelector('code').textContent
+
   try {
     await navigator.clipboard.writeText(code)
     // 可以添加复制成功的提示
@@ -94,10 +97,75 @@ const handleCodeCopy = async (code) => {
   }
 }
 
-// 处理代码块主题切换（直接绑定在模板）
-const handleThemeToggle = (block) => {
-  block.classList.toggle('dark-theme')
+// 处理代码块主题切换
+const handleThemeToggle = (event) => {
+  // 确保我们获取到正确的元素
+  const codeBlock = event.target.closest('.code-block')
+  // 修改获取图标元素的方式
+  const themeBtn = event.target.closest('[data-action="theme"]')
+  const themeIcon = themeBtn.querySelector('img')
+  const lightIcon = themeIcon.dataset.lightIcon
+  const darkIcon = themeIcon.dataset.darkIcon
+
+  // 添加调试日志
+  // console.log('切换主题', {
+  //   codeBlock,
+  //   themeIcon,
+  //   lightIcon,
+  //   darkIcon,
+  //   isDark: codeBlock.classList.contains('dark-theme'),
+  // })
+
+  codeBlock.classList.toggle('dark-theme')
+
+  // 切换图标
+  themeIcon.src = codeBlock.classList.contains('dark-theme') ? lightIcon : darkIcon
 }
+
+// 修改事件监听的方式
+onMounted(() => {
+  // 使用 MutationObserver 来监听 DOM 变化
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.addedNodes.length) {
+        const codeBlocks = document.querySelectorAll('.code-block')
+        codeBlocks.forEach((block) => {
+          const copyBtn = block.querySelector('[data-action="copy"]')
+          const themeBtn = block.querySelector('[data-action="theme"]')
+
+          if (copyBtn && !copyBtn._hasListener) {
+            copyBtn.addEventListener('click', handleCodeCopy)
+            copyBtn._hasListener = true
+          }
+          if (themeBtn && !themeBtn._hasListener) {
+            themeBtn.addEventListener('click', handleThemeToggle)
+            themeBtn._hasListener = true
+            // console.log('添加主题切换监听器', { block, themeBtn })
+          }
+        })
+      }
+    })
+  })
+
+  // 开始观察
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+  })
+
+  // 组件卸载时清理
+  onUnmounted(() => {
+    observer.disconnect()
+    const codeBlocks = document.querySelectorAll('.code-block')
+    codeBlocks.forEach((block) => {
+      const copyBtn = block.querySelector('[data-action="copy"]')
+      const themeBtn = block.querySelector('[data-action="theme"]')
+
+      copyBtn?.removeEventListener('click', handleCodeCopy)
+      themeBtn?.removeEventListener('click', handleThemeToggle)
+    })
+  })
+})
 
 // 将消息内容转换为 HTML
 const renderedContent = computed(() => {
@@ -150,26 +218,7 @@ const renderedReasoning = computed(() => {
         v-html="renderedReasoning"
       ></div>
       <!-- content -->
-<div class="bubble markdown-body">
-  <template v-if="renderedContent">
-    <component
-      :is="{ template: `<div>${renderedContent}</div>` }"
-      v-on:click="(e) => {
-        // 代码块复制按钮
-        if (e.target && e.target.closest('[data-action=\'copy\']')) {
-          const codeBlock = e.target.closest('.code-block')
-          const code = codeBlock?.querySelector('code')?.textContent || ''
-          handleCodeCopy(code)
-        }
-        // 代码块主题切换按钮
-        if (e.target && e.target.closest('[data-action=\'theme\']')) {
-          const codeBlock = e.target.closest('.code-block')
-          if (codeBlock) handleThemeToggle(codeBlock)
-        }
-      }"
-    />
-  </template>
-</div>
+      <div class="bubble markdown-body" v-html="renderedContent"></div>
       <!-- 只在 AI 助手消息中显示操作按钮和 tokens 信息 -->
       <div v-if="message.role === 'assistant' && message.loading === false" class="message-actions">
         <button
