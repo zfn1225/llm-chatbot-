@@ -24,9 +24,19 @@ const props = defineProps({
   },
 })
 
-// 点赞和踩的状态
-const isLiked = ref(false)
-const isDisliked = ref(false)
+// 点赞和踩的状态与消息数据解耦，直接绑定到 message 对象
+const isLiked = computed({
+  get: () => !!props.message.isLiked,
+  set: (val) => {
+    props.message.isLiked = val
+  }
+})
+const isDisliked = computed({
+  get: () => !!props.message.isDisliked,
+  set: (val) => {
+    props.message.isDisliked = val
+  }
+})
 
 // 添加复制状态
 const isCopied = ref(false)
