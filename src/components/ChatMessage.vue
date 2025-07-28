@@ -169,16 +169,26 @@ onMounted(() => {
   })
 })
 
-// 将消息内容转换为 HTML
-const renderedContent = computed(() => {
-  return renderMarkdown(props.message.content)
-})
+// renderMarkdown 缓存优化
+const markdownCache = new Map()
+function getCachedMarkdown(content) {
+  if (!content) return ''
+  if (markdownCache.has(content)) {
+    return markdownCache.get(content)
+  }
+  const html = renderMarkdown(content)
+  markdownCache.set(content, html)
+  // 控制缓存大小，防止内存泄漏
+  if (markdownCache.size > 50) {
+    // 删除最早的一个
+    const firstKey = markdownCache.keys().next().value
+    markdownCache.delete(firstKey)
+  }
+  return html
+}
 
-// 添加 reasoning_content 的渲染
-const renderedReasoning = computed(() => {
-  if (!props.message.reasoning_content) return ''
-  return renderMarkdown(props.message.reasoning_content)
-})
+const renderedContent = computed(() => getCachedMarkdown(props.message.content))
+const renderedReasoning = computed(() => getCachedMarkdown(props.message.reasoning_content))
 </script>
 
 <template>
