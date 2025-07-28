@@ -1,22 +1,24 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { renderMarkdown } from '@/utils/markdown'
-import { Document, ArrowDown } from '@element-plus/icons-vue'
-// 导入图片资源
-import copyIcon from '@/assets/photo/复制.png'
-import successIcon from '@/assets/photo/成功.png'
-import likeIcon from '@/assets/photo/赞.png'
-import likeActiveIcon from '@/assets/photo/赞2.png'
-import dislikeIcon from '@/assets/photo/踩.png'
-import dislikeActiveIcon from '@/assets/photo/踩2.png'
-import regenerateIcon from '@/assets/photo/重新生成.png'
-import thinkingIcon from '@/assets/photo/深度思考.png'
+import FilePreview from './FilePreview.vue'
+import ReasoningBlock from './ReasoningBlock.vue'
+import MessageActions from './MessageActions.vue'
 
-// 定义props
+// 定义props，类型更严格
 const props = defineProps({
   message: {
     type: Object,
     required: true,
+    validator: (msg) => {
+      return (
+        typeof msg === 'object' &&
+        typeof msg.role === 'string' &&
+        typeof msg.content === 'string' &&
+        (msg.files === undefined || Array.isArray(msg.files)) &&
+        (msg.reasoning_content === undefined || typeof msg.reasoning_content === 'string')
+      )
+    }
   },
   isLastAssistantMessage: {
     type: Boolean,
@@ -182,68 +184,35 @@ const renderedReasoning = computed(() => {
 <template>
   <div class="message-item" :class="{ 'is-mine': message.role === 'user' }">
     <div class="content">
-      <!-- 文件预览区域 -->
-      <div v-if="message.files && message.files.length > 0" class="files-container">
-        <div v-for="file in message.files" :key="file.url" class="file-item">
-          <!-- 图片预览 -->
-          <div v-if="file.type === 'image'" class="image-preview">
-            <img :src="file.url" :alt="file.name" />
-          </div>
-          <!-- 文件预览 -->
-          <div v-else class="file-preview">
-            <el-icon><Document /></el-icon>
-            <span class="file-name">{{ file.name }}</span>
-            <span class="file-size">{{ (file.size / 1024).toFixed(1) }}KB</span>
-          </div>
-        </div>
-      </div>
+      <!-- 文件预览区域组件化 -->
+      <FilePreview v-if="message.files && message.files.length > 0" :files="message.files" />
 
       <!-- 消息内容 -->
       <div v-if="message.loading && message.role === 'assistant'" class="thinking-text">
         <img src="@/assets/photo/加载中.png" alt="loading" class="loading-icon" />
         <span>内容生成中...</span>
       </div>
-      <!-- reasoning toggle button -->
-      <div v-if="message.reasoning_content" class="reasoning-toggle" @click="toggleReasoning">
-        <img :src="thinkingIcon" alt="thinking" />
-        <span>深度思考</span>
-        <el-icon class="toggle-icon" :class="{ 'is-expanded': isReasoningExpanded }">
-          <ArrowDown />
-        </el-icon>
-      </div>
-      <!-- reasoning_content -->
-      <div
-        v-if="message.reasoning_content && isReasoningExpanded"
-        class="reasoning markdown-body"
-        v-html="renderedReasoning"
-      ></div>
+
+      <!-- reasoning 组件化 -->
+      <ReasoningBlock v-if="message.reasoning_content" :reasoning-content="message.reasoning_content" />
+
       <!-- content -->
       <div class="bubble markdown-body" v-html="renderedContent"></div>
-      <!-- 只在 AI 助手消息中显示操作按钮和 tokens 信息 -->
-      <div v-if="message.role === 'assistant' && message.loading === false" class="message-actions">
-        <button
-          v-if="isLastAssistantMessage"
-          class="action-btn"
-          @click="handleRegenerate"
-          data-tooltip="重新生成"
-        >
-          <img :src="regenerateIcon" alt="regenerate" />
-        </button>
-        <button class="action-btn" @click="handleCopy" data-tooltip="复制">
-          <img :src="isCopied ? successIcon : copyIcon" alt="copy" />
-        </button>
-        <button class="action-btn" @click="handleLike" data-tooltip="喜欢">
-          <img :src="isLiked ? likeActiveIcon : likeIcon" alt="like" />
-        </button>
-        <button class="action-btn" @click="handleDislike" data-tooltip="不喜欢">
-          <img :src="isDisliked ? dislikeActiveIcon : dislikeIcon" alt="dislike" />
-        </button>
 
-        <!-- 添加 tokens 信息 -->
-        <span v-if="message.completion_tokens" class="tokens-info">
-          tokens: {{ message.completion_tokens }}, speed: {{ message.speed }} tokens/s
-        </span>
-      </div>
+      <!-- 操作按钮组件化 -->
+      <MessageActions
+        v-if="message.role === 'assistant' && message.loading === false"
+        :is-last-assistant-message="isLastAssistantMessage"
+        :is-copied="isCopied"
+        :is-liked="isLiked"
+        :is-disliked="isDisliked"
+        :completion-tokens="message.completion_tokens"
+        :speed="message.speed"
+        @regenerate="handleRegenerate"
+        @copy="handleCopy"
+        @like="handleLike"
+        @dislike="handleDislike"
+      />
     </div>
   </div>
 </template>
