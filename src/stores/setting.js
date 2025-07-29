@@ -18,9 +18,7 @@ export const useSettingStore = defineStore(
       settings,
     }
   },
-  {
-    persist: true,
-  },
+  // 不做持久化，关闭页面即丢失
 )
 
 export const modelOptions = [
