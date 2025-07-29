@@ -1,12 +1,22 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 export const useSettingStore = defineStore(
   'llm-setting',
   () => {
+    // Cookie操作工具
+    function setCookie(name, value, days = 7) {
+      const expires = new Date(Date.now() + days * 864e5).toUTCString()
+      document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Strict; secure`;
+    }
+    function getCookie(name) {
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? decodeURIComponent(match[2]) : '';
+    }
+
     const settings = ref({
       model: 'deepseek-ai/DeepSeek-R1',
-      apiKey: '',
+      apiKey: getCookie('llm_apiKey') || '',
       stream: true,
       maxTokens: 4096,
       temperature: 0.7,
@@ -14,11 +24,18 @@ export const useSettingStore = defineStore(
       topK: 50,
     })
 
+    // 监听apiKey变化，自动写入cookie
+    watch(
+      () => settings.value.apiKey,
+      (val) => {
+        setCookie('llm_apiKey', val)
+      }
+    )
+
     return {
       settings,
     }
-  },
-  // 不做持久化，关闭页面即丢失
+  }
 )
 
 export const modelOptions = [
